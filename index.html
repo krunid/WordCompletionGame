@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมเติมอักษรที่หายไป</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f2f5;
+        }
+        .game-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        .word-display {
+            font-size: 2rem;
+            margin: 1.5rem 0;
+            min-height: 3rem;
+            letter-spacing: 0.1em;
+        }
+        .hidden-letter {
+            color: red;
+            border-bottom: 2px solid red;
+            padding: 0 5px;
+        }
+        .feedback {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            min-height: 1.5rem;
+        }
+        .correct {
+            color: #4CAF50;
+        }
+        .incorrect {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="flex justify-between mb-4 text-lg font-bold">
+            <div>เวลา: <span id="timer">60</span> วินาที</div>
+            <div>คะแนน: <span id="score">0</span></div>
+        </div>
+        
+        <div id="startScreen">
+            <h1 class="text-2xl font-bold mb-4">เกมเติมอักษรที่หายไป</h1>
+            <p class="mb-4">คะแนนสูงสุด: <span id="highScore">0</span></p>
+            <button 
+                onclick="startGame()"
+                class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
+                เริ่มเกม
+            </button>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <div class="word-display" id="wordDisplay"></div>
+            <div class="space-y-4">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    maxlength="1" 
+                    placeholder="พิมพ์ตัวอักษร"
+                    class="text-center text-xl p-2 border border-gray-300 rounded w-24"
+                >
+                <button 
+                    onclick="checkAnswer()"
+                    class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors ml-2">
+                    ตรวจคำตอบ
+                </button>
+            </div>
+            <div class="feedback" id="feedback"></div>
+        </div>
+    </div>
+
+    <script>
+        // เช็คว่า elements ทั้งหมดโหลดเสร็จแล้ว
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                initGame();
+            } catch (error) {
+                console.error('Error initializing game:', error);
+            }
+        });
+
+        function initGame() {
+            const words = [
+                'ความสุข', 'อาหาร', 'การเรียน', 'ดอกไม้', 'ท้องฟ้า',
+                'น้ำทะเล', 'ภูเขา', 'สายลม', 'ดวงดาว', 'พระจันทร์',
+                'ต้นไม้', 'นกน้อย', 'ผีเสื้อ', 'กระต่าย', 'แมวเหมียว'
+            ];
+            
+            let currentWord = '';
+            let hiddenIndex = -1;
+            let score = 0;
+            let timeLeft = 60;
+            let timerInterval;
+            let highScore = 0;  // เก็บคะแนนสูงสุดในตัวแปรแทน localStorage
+
+            // ฟังก์ชันเริ่มเกม
+            window.startGame = function() {
+                try {
+                    score = 0;
+                    timeLeft = 60;
+                    document.getElementById('score').textContent = '0';
+                    document.getElementById('timer').textContent = timeLeft;
+                    document.getElementById('startScreen').style.display = 'none';
+                    document.getElementById('gameScreen').style.display = 'block';
+                    document.getElementById('feedback').textContent = '';
+                    
+                    nextWord();
+                    startTimer();
+                    document.getElementById('userInput').focus();
+                } catch (error) {
+                    console.error('Error starting game:', error);
+                }
+            };
+
+            // ฟังก์ชันสุ่มคำใหม่
+            function nextWord() {
+                try {
+                    currentWord = words[Math.floor(Math.random() * words.length)];
+                    hiddenIndex = Math.floor(Math.random() * currentWord.length);
+                    
+                    const wordDisplay = document.getElementById('wordDisplay');
+                    wordDisplay.innerHTML = currentWord
+                        .split('')
+                        .map((char, i) => i === hiddenIndex ? '<span class="hidden-letter">_</span>' : char)
+                        .join('');
+                    
+                    document.getElementById('userInput').value = '';
+                } catch (error) {
+                    console.error('Error generating next word:', error);
+                }
+            }
+
+            // ฟังก์ชันตรวจคำตอบ
+            window.checkAnswer = function() {
+                try {
+                    const userInput = document.getElementById('userInput').value;
+                    const feedback = document.getElementById('feedback');
+                    
+                    if (userInput.toLowerCase() === currentWord[hiddenIndex].toLowerCase()) {
+                        score++;
+                        document.getElementById('score').textContent = score;
+                        feedback.textContent = 'ถูกต้อง! 🎉';
+                        feedback.className = 'feedback correct';
+                        setTimeout(nextWord, 1000);
+                    } else {
+                        feedback.textContent = 'ลองใหม่อีกครั้ง ❌';
+                        feedback.className = 'feedback incorrect';
+                    }
+                    document.getElementById('userInput').value = '';
+                    document.getElementById('userInput').focus();
+                } catch (error) {
+                    console.error('Error checking answer:', error);
+                }
+            };
+
+            // ฟังก์ชันจับเวลา
+            function startTimer() {
+                try {
+                    clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('timer').textContent = timeLeft;
+                        
+                        if (timeLeft <= 0) {
+                            endGame();
+                        }
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error starting timer:', error);
+                }
+            }
+
+            // ฟังก์ชันจบเกม
+            function endGame() {
+                try {
+                    clearInterval(timerInterval);
+                    if (score > highScore) {
+                        highScore = score;
+                        document.getElementById('highScore').textContent = highScore;
+                    }
+                    document.getElementById('startScreen').style.display = 'block';
+                    document.getElementById('gameScreen').style.display = 'none';
+                } catch (error) {
+                    console.error('Error ending game:', error);
+                }
+            }
+
+            // เพิ่ม Event Listener สำหรับการกด Enter
+            document.getElementById('userInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    window.checkAnswer();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
